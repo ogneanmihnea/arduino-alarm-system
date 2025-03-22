@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistem de Securitate - Dashboard</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+      }
+      .sensor-card {
+        background-color: #fafafa;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s;
+      }
+      .sensor-card:hover {
+        transform: translateY(-5px);
+      }
+      .sensor-card h2 {
+        margin-top: 0;
+        color: #444;
+        font-size: 1.2rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+      }
+      .value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #333;
+        margin: 10px 0;
+      }
+      .status {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+      }
+      .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+      .status-normal {
+        background-color: #4caf50;
+      }
+      .status-warning {
+        background-color: #ffc107;
+      }
+      .status-danger {
+        background-color: #f44336;
+      }
+      .connection-status {
+        text-align: center;
+        margin-bottom: 20px;
+        padding: 10px;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+      .connected {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+      }
+      .disconnected {
+        background-color: #ffebee;
+        color: #c62828;
+      }
+      .last-update {
+        text-align: right;
+        color: #777;
+        font-size: 0.8rem;
+        margin-top: 20px;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .actions {
+        text-align: center;
+        margin: 20px 0;
+      }
+      .alarm-active {
+        background-color: #ffebee;
+        border: 2px solid #f44336;
+        animation: pulse 1.5s infinite;
+      }
+      .alarm-message {
+        background-color: #f44336;
+        color: white;
+        padding: 15px;
+        border-radius: 5px;
+        text-align: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin: 20px 0;
+        display: none;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+        }
+      }
+      .logs {
+        margin-top: 30px;
+        border: 1px solid #eee;
+        padding: 10px;
+        border-radius: 5px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .log-entry {
+        margin: 5px 0;
+        padding: 5px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .log-time {
+        color: #777;
+        font-size: 0.8rem;
+        margin-right: 10px;
+      }
+      /* Stiluri pentru popup */
+      .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        display: none;
+      }
+      .popup-content {
+        background-color: white;
+        border-radius: 10px;
+        padding: 30px;
+        width: 80%;
+        max-width: 500px;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+      .popup-title {
+        color: #f44336;
+        font-size: 2rem;
+        margin-bottom: 20px;
+      }
+      .popup-message {
+        font-size: 1.2rem;
+        margin-bottom: 30px;
+      }
+      .popup-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+      }
+      .popup-close {
+        background-color: #f44336;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 1.1rem;
+        transition: background-color 0.3s;
+      }
+      .popup-close:hover {
+        background-color: #d32f2f;
+      }
+      .pulse-animation {
+        animation: pulse-popup 1.5s infinite;
+      }
+      @keyframes pulse-popup {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Sistem de Securitate - Dashboard</h1>
+
+      <div id="connection-status" class="connection-status">
+        Conectare în curs...
+      </div>
+
+      <div id="alarm-message" class="alarm-message">ALARMĂ ACTIVATĂ!</div>
+
+      <div class="actions">
+        <button id="reconnectBtn">Reconectare</button>
+        <button
+          id="testFireAlarmBtn"
+          style="background-color: #f44336; margin-left: 10px"
+        >
+          Testare Alarmă Foc
+        </button>
+      </div>
+
+      <div class="dashboard" id="dashboard">
+        <!-- Cardurile cu senzorii vor fi adăugate dinamic -->
+      </div>
+
+      <div class="logs" id="logs">
+        <h3>Jurnal de evenimente</h3>
+        <div id="log-entries"></div>
+      </div>
+
+      <div class="last-update" id="lastUpdate">Ultima actualizare: --</div>
+    </div>
+
+    <!-- Popup pentru alarmă de foc -->
+    <div id="fire-popup" class="popup-overlay">
+      <div class="popup-content pulse-animation">
+        <div class="popup-icon">🔥</div>
+        <h2 class="popup-title">ALARMĂ INCENDIU!</h2>
+        <p class="popup-message">
+          Un incendiu a fost detectat în zona monitorizată. Vă rugăm verificați
+          imediat și luați măsurile necesare.
+        </p>
+        <button id="close-fire-popup" class="popup-close">
+          Închide alertă
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "http://127.0.0.1:3000/data";
+      const UPDATE_INTERVAL = 1000; // 1 secundă
+      let ok = 0;
+
+      const sensorConfig = {
+        Temperature: {
+          icon: "🌡️",
+          unit: "°C",
+          threshold: {
+            warning: 30,
+            danger: 50,
+          },
+        },
+        Sound: {
+          icon: "🔊",
+          unit: "",
+          threshold: {
+            warning: 200,
+            danger: 230,
+          },
+        },
+        alarmActive: {
+          icon: "🚨",
+          unit: "",
+          isBool: true,
+        },
+        alarmTrigger: {
+          icon: "⚠️",
+          unit: "",
+        },
+        status: {
+          icon: "📡",
+          unit: "",
+          isBool: false,
+        },
+      };
+
+      let lastData = {};
+      let logEntries = [];
+      let firePopupShown = false;
+
+      function showFirePopup() {
+        const firePopup = document.getElementById("fire-popup");
+        firePopup.style.display = "flex";
+        firePopupShown = true;
+        addLogEntry("🔥 ALARMĂ INCENDIU: Popup afișat");
+        console.log("Fire popup displayed");
+      }
+
+      function addLogEntry(message) {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString();
+
+        // Add to log entries array (limit to last 100 entries)
+        logEntries.unshift({ time: timeStr, message: message });
+        if (logEntries.length > 100) {
+          logEntries.pop();
+        }
+
+        // Update UI
+        const logEntriesEl = document.getElementById("log-entries");
+        logEntriesEl.innerHTML = "";
+
+        logEntries.forEach((entry) => {
+          const logEntryEl = document.createElement("div");
+          logEntryEl.className = "log-entry";
+          logEntryEl.innerHTML = `<span class="log-time">${entry.time}</span> ${entry.message}`;
+          logEntriesEl.appendChild(logEntryEl);
+        });
+      }
+
+      function createSensorCard(id, title, value, icon, unit, status) {
+        const card = document.createElement("div");
+        card.className = "sensor-card";
+        card.id = `sensor-${id}`;
+
+        let statusClass = "status-normal";
+        if (status === "warning") statusClass = "status-warning";
+        if (status === "danger") statusClass = "status-danger";
+
+        card.innerHTML = `
+                <h2>${icon} ${title}</h2>
+                <div class="value">${value}${unit}</div>
+                <div class="status">
+                    <div class="status-indicator ${statusClass}"></div>
+                    <span>${
+                      status === "normal"
+                        ? "Normal"
+                        : status === "warning"
+                        ? "Atenție"
+                        : "Pericol"
+                    }</span>
+                </div>
+            `;
+
+        return card;
+      }
+
+      function updateDashboard(data) {
+        const dashboard = document.getElementById("dashboard");
+        const connectionStatus = document.getElementById("connection-status");
+        const alarmMessage = document.getElementById("alarm-message");
+
+        // Log incoming data for debugging
+        console.log("Received data:", data);
+
+        if (data.Flame && ok === 0) {
+          showFirePopup();
+          ok = 1;
+        }
+
+        // Check for changes that need to be logged
+        if (!lastData.alarmActive && data.alarmActive === "true") {
+          addLogEntry(
+            `🚨 ALARMĂ ACTIVATĂ: ${data.alarmTrigger || "Senzor necunoscut"}`
+          );
+
+          // If the alarm trigger is FLAME, show the fire popup
+          if (data.alarmTrigger === "LIGHTS") {
+            showFirePopup();
+          }
+        } else if (
+          lastData.alarmActive === "true" &&
+          data.alarmActive !== "true"
+        ) {
+          addLogEntry("✅ Alarmă dezactivată");
+        }
+
+        if (lastData.status !== data.status) {
+          addLogEntry(`📡 Status conexiune: ${data.status}`);
+        }
+
+        // Check explicitly for FLAME in data.alarmTrigger
+        if (data.alarmTrigger === "LIGHTS" && !firePopupShown) {
+          showFirePopup();
+        }
+
+        lastData = { ...data };
+
+        // Actualizare status conexiune
+        if (data.status) {
+          if (data.status.includes("error") || data.status === "Disconnected") {
+            connectionStatus.className = "connection-status disconnected";
+            connectionStatus.innerText = `Deconectat: ${data.status}`;
+          } else {
+            connectionStatus.className = "connection-status connected";
+            connectionStatus.innerText = "Conectat la sistem";
+          }
+        }
+
+        // Verifică starea alarmei generale
+        const container = document.querySelector(".container");
+        if (data.alarmActive === "true") {
+          container.classList.add("alarm-active");
+          alarmMessage.style.display = "block";
+          alarmMessage.innerText = `ALARMĂ ACTIVATĂ: ${
+            data.alarmTrigger || "Senzor necunoscut"
+          }`;
+        } else {
+          container.classList.remove("alarm-active");
+          alarmMessage.style.display = "none";
+        }
+
+        // Golește dashboard-ul dacă e prima încărcare
+        if (dashboard.childNodes.length === 0) {
+          dashboard.innerHTML = "";
+
+          // Creează carduri pentru fiecare senzor (exceptând Flame)
+          for (const [key, value] of Object.entries(data)) {
+            // Skip these keys as they're not sensors or have special handling
+            if (key === "status" || key === "alarmTrigger" || key === "Flame")
+              continue;
+
+            if (sensorConfig[key]) {
+              const config = sensorConfig[key];
+              let status = "normal";
+
+              // Determină statusul bazat pe praguri
+              if (!config.isBool && config.threshold) {
+                const numValue = parseFloat(value);
+                if (numValue >= config.threshold.danger) status = "danger";
+                else if (numValue >= config.threshold.warning)
+                  status = "warning";
+              }
+
+              // Pentru valori boolean (true/false)
+              if (config.isBool) {
+                status = value === "true" ? "danger" : "normal";
+              }
+
+              const card = createSensorCard(
+                key,
+                key,
+                value,
+                config.icon,
+                config.unit,
+                status
+              );
+
+              dashboard.appendChild(card);
+            } else if (key !== "Flame") {
+              // Pentru senzori neconfigurați (exceptând Flame)
+              const card = createSensorCard(
+                key,
+                key,
+                value,
+                "📊",
+                "",
+                "normal"
+              );
+
+              dashboard.appendChild(card);
+            }
+          }
+        } else {
+          // Actualizare carduri existente
+          for (const [key, value] of Object.entries(data)) {
+            if (key === "status" || key === "alarmTrigger" || key === "Flame")
+              continue;
+
+            const card = document.getElementById(`sensor-${key}`);
+            if (card) {
+              const valueEl = card.querySelector(".value");
+              const statusIndicator = card.querySelector(".status-indicator");
+              const statusText = card.querySelector(".status span");
+
+              if (valueEl) {
+                const config = sensorConfig[key] || { unit: "" };
+                valueEl.innerText = `${value}${config.unit}`;
+              }
+
+              // Actualizare status
+              if (statusIndicator && statusText && sensorConfig[key]) {
+                const config = sensorConfig[key];
+                let status = "normal";
+
+                if (!config.isBool && config.threshold) {
+                  const numValue = parseFloat(value);
+                  if (numValue >= config.threshold.danger) status = "danger";
+                  else if (numValue >= config.threshold.warning)
+                    status = "warning";
+                }
+
+                if (config.isBool) {
+                  status = value === "true" ? "danger" : "normal";
+                }
+
+                statusIndicator.className = `status-indicator status-${status}`;
+                statusText.innerText =
+                  status === "normal"
+                    ? "Normal"
+                    : status === "warning"
+                    ? "Atenție"
+                    : "Pericol";
+              }
+            } else if (key !== "Flame") {
+              // Adaugă carduri noi dacă nu există (exceptând Flame)
+              const config = sensorConfig[key] || {
+                icon: "📊",
+                unit: "",
+                threshold: null,
+              };
+              let status = "normal";
+
+              if (!config.isBool && config.threshold) {
+                const numValue = parseFloat(value);
+                if (numValue >= config.threshold.danger) status = "danger";
+                else if (numValue >= config.threshold.warning)
+                  status = "warning";
+              }
+
+              if (config.isBool) {
+                status = value === "true" ? "danger" : "normal";
+              }
+
+              const newCard = createSensorCard(
+                key,
+                key,
+                value,
+                config.icon,
+                config.unit,
+                status
+              );
+
+              dashboard.appendChild(newCard);
+            }
+          }
+        }
+
+        // Actualizare timestamp
+        document.getElementById(
+          "lastUpdate"
+        ).innerText = `Ultima actualizare: ${new Date().toLocaleTimeString()}`;
+      }
+
+      function fetchData() {
+        fetch(API_URL)
+          .then((response) => response.json())
+          .then((data) => {
+            updateDashboard(data);
+          })
+          .catch((error) => {
+            console.error("Eroare la preluarea datelor:", error);
+            const connectionStatus =
+              document.getElementById("connection-status");
+            connectionStatus.className = "connection-status disconnected";
+            connectionStatus.innerText = "Eroare de conexiune la server";
+          });
+      }
+
+      // Inițializare și actualizare periodică
+      fetchData();
+      setInterval(fetchData, UPDATE_INTERVAL);
+
+      // Buton de reconectare
+      document.getElementById("reconnectBtn").addEventListener("click", () => {
+        fetch("http://127.0.0.1:3000/reconnect")
+          .then((response) => response.json())
+          .then((data) => {
+            alert(data.message);
+            addLogEntry("🔄 Solicitare reconectare la portul serial");
+            fetchData(); // Actualizare imediată
+          })
+          .catch((error) => {
+            console.error("Eroare la reconectare:", error);
+            alert("Eroare la reconectare la server");
+            addLogEntry("❌ Eroare la reconectare la server");
+          });
+      });
+
+      // Buton de testare alarmă foc
+      document
+        .getElementById("testFireAlarmBtn")
+        .addEventListener("click", () => {
+          showFirePopup();
+          addLogEntry("🧪 Test alarmă incendiu inițiat manual");
+        });
+
+      // Închidere popup alarmă foc
+      document
+        .getElementById("close-fire-popup")
+        .addEventListener("click", () => {
+          document.getElementById("fire-popup").style.display = "none";
+          firePopupShown = false;
+          addLogEntry("🚫 Popup alarmă incendiu închis de utilizator");
+        });
+
+      // Add initial log entry
+      addLogEntry("📊 Dashboard inițializat");
+    </script>
+  </body>
+</html>
